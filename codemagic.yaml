@@ -56,16 +56,17 @@ workflows:
           cd AnkiApp
           xcodegen generate
 
-      - name: Build iOS App (.app)
+      - name: Build iOS App (.app for Simulator)
         script: |
           cd AnkiApp
-          # シミュレータ向けに署名なしでビルドを実行
+          # -skipMacroValidation を追加してマクロの実行を許可する
           xcodebuild build \
             -project AnkiApp.xcodeproj \
             -scheme AnkiApp \
-            -sdk iphoneos \
+            -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath ../build \
+            -skipMacroValidation \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
