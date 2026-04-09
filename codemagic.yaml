@@ -21,10 +21,19 @@ workflows:
 
       - name: Install Rust toolchain
         script: |
-          # 要件: Rust (rustup経由)
-          # 最新のstableをインストールし、必要なターゲットを追加
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios-simulator
+          if command -v rustup &> /dev/null; then
+            echo "Rust is already installed. Updating..."
+            rustup update
+          else
+            echo "Rust is not installed. Installing..."
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source $HOME/.cargo/env
+          fi
+          
+          # 【修正】末尾の「x86_64-apple-ios-simulator」を「x86_64-apple-ios」に修正
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+
+
 
       - name: Install Dependencies (Homebrew)
         script: |
