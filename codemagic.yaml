@@ -75,6 +75,9 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
+
+# (scripts の設定は今のままでOKです)
+
     artifacts:
-      # ビルドされた .app ファイルを成果物として保存 (Codemagicが自動的にzip化します)
-      - build/Build/Products/*-iphonesimulator/*.app
+      # 【修正】 "-iphonesimulator" の部分を削り、どのフォルダに出力されても拾うようにする
+      - build/Build/Products/*/*.app
