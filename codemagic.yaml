@@ -1,0 +1,66 @@
+workflows:
+  ios-test-build:
+    name: iOS Simulator Test Build (.app)
+    # Rustのビルドを高速化するため、Apple Silicon (M2) のインスタンスを指定
+    instance_type: mac_mini_m2
+    # タイムアウト時間（分）
+    max_build_duration: 60
+    
+    environment:
+      # 要件: Xcode 16.0+
+      xcode: 16.0
+      vars:
+        # cargoコマンドを各ステップで使えるようにパスを通す
+        PATH: $HOME/.cargo/bin:$PATH
+
+    scripts:
+      - name: Initialize Git submodules
+        script: |
+          # リポジトリのクローン時にサブモジュールを取得
+          git submodule update --init --recursive
+
+      - name: Install Rust toolchain
+        script: |
+          # 要件: Rust (rustup経由)
+          # 最新のstableをインストールし、必要なターゲットを追加
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios-simulator
+
+      - name: Install Dependencies (Homebrew)
+        script: |
+          # 要件: protoc 3.0+, protoc-gen-swift, xcodegen
+          brew install protobuf swift-protobuf xcodegen
+
+      - name: Build the Rust XCFramework
+        script: |
+          # スクリプトに実行権限を付与して実行
+          chmod +x ./scripts/build-xcframework.sh
+          ./scripts/build-xcframework.sh
+
+      - name: Generate Swift protobuf types
+        script: |
+          chmod +x ./scripts/generate-protos.sh
+          ./scripts/generate-protos.sh
+
+      - name: Generate Xcode project
+        script: |
+          cd AnkiApp
+          xcodegen generate
+
+      - name: Build iOS App (.app)
+        script: |
+          cd AnkiApp
+          # シミュレータ向けに署名なしでビルドを実行
+          xcodebuild build \
+            -project AnkiApp.xcodeproj \
+            -scheme AnkiApp \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ../build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+    artifacts:
+      # ビルドされた .app ファイルを成果物として保存 (Codemagicが自動的にzip化します)
+      - build/Build/Products/*-iphonesimulator/*.app
